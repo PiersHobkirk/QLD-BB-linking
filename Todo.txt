@@ -1,0 +1,23 @@
+So...
+
+
+Go through each chapter (210 total)
+Copy the html?
+
+Extract links
+Parse link text for MNCs
+
+MNCs =/= reported decision
+
+See if JADE has that mnc or report...
+
+
+Regexes applied
+
+(\n.*?queenslandjudgments.*?\n).*?True,True.*?\n
+$1
+
+\n.*?queenslandjudgments.*?\n
+\n
+
+\n.*?jade.*?True,False

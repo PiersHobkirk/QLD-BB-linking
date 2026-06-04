@@ -1,0 +1,114 @@
+[
+  {
+    "name": "jadeLoadedModule",
+    "value": "BFE1A436888CA4CB6B75F25BDB79E316",
+    "domain": "jade.io",
+    "path": "/search",
+    "expires": -1,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "JSESSIONID",
+    "value": "mlpBQWOyYxvcg6z5JZg1y8O26BL2frUzrW2N4sie.b792d40ee2f1",
+    "domain": "jade.io",
+    "path": "/",
+    "expires": -1,
+    "httpOnly": true,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "IID",
+    "value": "s0EbhfrQ0DChlhJLYfYCcy7aoPZ7W92k",
+    "domain": "jade.io",
+    "path": "/",
+    "expires": 1814828445.518288,
+    "httpOnly": true,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "cfz_zaraz-analytics",
+    "value": "%7B%22_cfa_clientId%22%3A%7B%22v%22%3A%2210470420606018672%22%2C%22e%22%3A1811804445652%7D%2C%22_cfa_sId%22%3A%7B%22v%22%3A%223934037145649560%22%2C%22e%22%3A1780270245652%7D%7D",
+    "domain": ".jade.io",
+    "path": "/",
+    "expires": 1811804480.412889,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "cf_clearance",
+    "value": "00rourFqj.kTBpnhEcHipg2614d9i9ibGJA8pJ2iiDs-1780268446-1.2.1.1-iZOx2Ii3iUPw4hZnl.KLQzYfDupf9IN3a4Q_BwnAvti6vt4OSGimhjxVzyRePTElebklCKmUkj3jr8_y8gq_KdIV9qqfg4BZ31kl6ltGYeQNSLASqAh3zly7atlWpS3Fdr3qMsHNLcWa9kz3f3spGKLy_ro1_4tXlWU6XiYWzS319aot.unziWnL8Mq1aGgpHvqxzK4u0wtcKuaEtFD9zQ0JY36GrAjKBkn7T6WIdtRL5iYVKw7EMSLvfnMwnFKKzN5DSgfkWay354t3wI4B21Tudsk3QFksqX9iZxK3STlgbCqp4op_RAp8WLJcrKl_MUMyTgMXiTePnHnr47hX5w",
+    "domain": ".jade.io",
+    "path": "/",
+    "expires": 1811804446.81065,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None",
+    "partitionKey": "https://jade.io",
+    "_crHasCrossSiteAncestor": false
+  },
+  {
+    "name": "__cf_bm",
+    "value": "rTgUkBV6.tOeps2R_orxbqlwJmgpOlgVFblvlenWwpc-1780268446.8227315-1.0.1.1-kJOaZ6Nc1P3AMlBm2Ey2GlDGhYsA6w6Sdia7ovi_SrclRcMnG7qUACQv_gdPNS1N.EjC4wjoGhrVnWwEQhoutyGbCcoCkikwti8hvfUv9.iQIRngFepcrEUeTUC4rxgf",
+    "domain": ".jade.io",
+    "path": "/",
+    "expires": 1780270246.810737,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "_pk_id.3.f0e1",
+    "value": "aeedfa5880658d2e.1780268448.",
+    "domain": ".jade.io",
+    "path": "/",
+    "expires": 1814223648,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "_pk_ses.3.f0e1",
+    "value": "1",
+    "domain": ".jade.io",
+    "path": "/",
+    "expires": 1780270280,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "alcsessionid",
+    "value": "w4EbFLzQ0DCEmntWI629H28rk7oYLCSt",
+    "domain": "jade.io",
+    "path": "/",
+    "expires": 1814828479.166693,
+    "httpOnly": true,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "cfzs_google-analytics_v4",
+    "value": "%7B%22kwOL_pageviewCounter%22%3A%7B%22v%22%3A%224%22%7D%7D",
+    "domain": ".jade.io",
+    "path": "/",
+    "expires": -1,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "cfz_google-analytics_v4",
+    "value": "%7B%22kwOL_engagementDuration%22%3A%7B%22v%22%3A%220%22%2C%22e%22%3A1811804480446%7D%2C%22kwOL_engagementStart%22%3A%7B%22v%22%3A%221780268480446%22%2C%22e%22%3A1811804480446%7D%2C%22kwOL_counter%22%3A%7B%22v%22%3A%224%22%2C%22e%22%3A1811804480446%7D%2C%22kwOL_ga4sid%22%3A%7B%22v%22%3A%22795164114%22%2C%22e%22%3A1780270280446%7D%2C%22kwOL_session_counter%22%3A%7B%22v%22%3A%221%22%2C%22e%22%3A1811804480446%7D%2C%22kwOL_ga4%22%3A%7B%22v%22%3A%2218bff9b7-6b56-489a-8cc9-8b126ddb1b37%22%2C%22e%22%3A1811804480446%7D%2C%22kwOL__z_ga_audiences%22%3A%7B%22v%22%3A%2218bff9b7-6b56-489a-8cc9-8b126ddb1b37%22%2C%22e%22%3A1811804445652%7D%2C%22kwOL_let%22%3A%7B%22v%22%3A%221780268480446%22%2C%22e%22%3A1811804480446%7D%7D",
+    "domain": ".jade.io",
+    "path": "/",
+    "expires": 1811804480.41291,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  }
+]

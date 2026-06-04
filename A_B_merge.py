@@ -1,172 +1,91 @@
-#!/usr/bin/env python3
-
-"""
-Update QLDBB_link_map.csv by filling jade_link from jade_easy_mncs.csv.
-
-Rules:
-- Match rows on identical link_destination.
-- For each unique link_destination in CSV B, all jade_article_link values
-  must be identical. If not, report a conflict and continue.
-- Update matching rows in CSV A:
-    jade_link = jade_article_link
-- Report:
-    * conflicting jade_article_link values in CSV B
-    * link_destinations from CSV B not found in CSV A
-    * rows in CSV A where jade_link already had content
-- Save CSV A in place.
-"""
-
-from collections import defaultdict
-import csv
 from pathlib import Path
+import csv
 
 CSV_A = Path("link_mapping/QLDBB_link_map.csv")
-CSV_B = Path("csvs/jade_easy_mncs.csv")
+CSV_B = Path("link_mapping/legislation_potential_jade_links.csv")
+
+OUT = Path("link_mapping/QLDBB_link_map_UPDATED.csv")
 
 
-def normalise(value):
-    return (value or "").strip()
+def norm(v):
+    return (v or "").strip()
 
 
-# ---------------------------------------------------------------------------
-# Load CSV B and check for conflicting jade_article_links
-# ---------------------------------------------------------------------------
-
-b_destinations = defaultdict(set)
-
-with CSV_B.open("r", newline="", encoding="utf-8-sig") as f:
-    reader = csv.DictReader(f)
-
-    for row in reader:
-        link_destination = normalise(row.get("link_destination"))
-        jade_article_link = normalise(row.get("jade_article_link"))
-
-        if link_destination:
-            b_destinations[link_destination].add(jade_article_link)
-
-conflicting_b_links = []
-
-# Final mapping: link_destination -> jade_article_link
-destination_to_jade = {}
-
-for link_destination, jade_links in b_destinations.items():
-    non_empty = {x for x in jade_links if x}
-
-    if len(non_empty) > 1:
-        conflicting_b_links.append(
-            {
-                "link_destination": link_destination,
-                "jade_article_links": sorted(non_empty),
-            }
-        )
-        # Continue anyway; arbitrarily choose first sorted value
-        destination_to_jade[link_destination] = sorted(non_empty)[0]
-    elif len(non_empty) == 1:
-        destination_to_jade[link_destination] = next(iter(non_empty))
-    else:
-        destination_to_jade[link_destination] = ""
-
-
-# ---------------------------------------------------------------------------
 # Load CSV A
-# ---------------------------------------------------------------------------
-
-with CSV_A.open("r", newline="", encoding="utf-8-sig") as f:
+with CSV_A.open(newline="", encoding="utf-8") as f:
     reader = csv.DictReader(f)
-    fieldnames = reader.fieldnames
     rows_a = list(reader)
+    fieldnames = reader.fieldnames
 
-if not fieldnames:
-    raise RuntimeError("CSV A has no header row")
+index_a = {norm(r["link_id"]): i for i, r in enumerate(rows_a)}
 
-# Build lookup by link_destination
-rows_by_destination = defaultdict(list)
+# Read CSV B updates
+updates = []
+with CSV_B.open(newline="", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        link_id = norm(row.get("link_id"))
+        jade_link = norm(row.get("jade_link"))
 
-for row in rows_a:
-    link_destination = normalise(row.get("link_destination"))
-    rows_by_destination[link_destination].append(row)
+        if not link_id:
+            continue
 
-# ---------------------------------------------------------------------------
-# Apply updates
-# ---------------------------------------------------------------------------
+        updates.append((link_id, jade_link))
 
-not_found = []
-existing_jade_conflicts = []
 
-for link_destination, jade_article_link in destination_to_jade.items():
-    matching_rows = rows_by_destination.get(link_destination, [])
+# Tracking
+applied = 0
+skipped_existing = []
+missing_in_a = []
+empty_in_b = []
+updated = []
 
-    if not matching_rows:
-        not_found.append(link_destination)
+
+for link_id, new_jade in updates:
+    if not new_jade:
+        empty_in_b.append(link_id)
         continue
 
-    for row in matching_rows:
-        existing_jade = normalise(row.get("jade_link"))
+    if link_id not in index_a:
+        missing_in_a.append(link_id)
+        continue
 
-        if existing_jade:
-            existing_jade_conflicts.append(
-                {
-                    "link_id": row.get("link_id", ""),
-                    "link_destination": link_destination,
-                    "existing_jade_link": existing_jade,
-                    "new_jade_link": jade_article_link,
-                }
-            )
+    row = rows_a[index_a[link_id]]
+    existing = norm(row.get("jade_link"))
 
-        if not existing_jade:
-            row["jade_link"] = jade_article_link
+    if existing:
+        skipped_existing.append((link_id, existing))
+        continue
 
-# ---------------------------------------------------------------------------
-# Save CSV A in place
-# ---------------------------------------------------------------------------
+    row["jade_link"] = new_jade
+    applied += 1
+    updated.append((link_id, new_jade))
 
-with CSV_A.open("w", newline="", encoding="utf-8") as f:
+
+# Write output
+with OUT.open("w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(rows_a)
 
-# ---------------------------------------------------------------------------
-# Report
-# ---------------------------------------------------------------------------
 
-print()
-print("=== SUMMARY ===")
-print(f"Unique link_destinations in CSV B: {len(destination_to_jade)}")
-print(f"Rows in CSV A: {len(rows_a)}")
-print()
+# Reporting
+print("\n=== UPDATED ===")
+for link_id, jade in updated:
+    print(f"[UPDATED] {link_id} → {jade}")
 
-if conflicting_b_links:
-    print("=== CONFLICT: DIFFERENT jade_article_link VALUES IN CSV B ===")
-    for conflict in conflicting_b_links:
-        print(f"link_destination: {conflict['link_destination']}")
-        for value in conflict["jade_article_links"]:
-            print(f"  {value}")
-        print()
-else:
-    print("No conflicting jade_article_link values in CSV B.")
-    print()
+print("\n=== SKIPPED (already had value in CSV A) ===")
+for link_id, existing in skipped_existing:
+    print(f"[SKIP-EXISTS] {link_id} (existing='{existing}')")
 
-if existing_jade_conflicts:
-    print("=== CONFLICT: jade_link ALREADY POPULATED IN CSV A ===")
-    for conflict in existing_jade_conflicts:
-        print(
-            f"link_id={conflict['link_id']} "
-            f"destination={conflict['link_destination']}"
-        )
-        print(f"  existing: {conflict['existing_jade_link']}")
-        print(f"  new:      {conflict['new_jade_link']}")
-        print()
-else:
-    print("No existing jade_link values overwritten in CSV A.")
-    print()
+print("\n=== MISSING IN CSV A ===")
+for link_id in missing_in_a:
+    print(f"[MISSING-A] {link_id}")
 
-if not_found:
-    print("=== NOT FOUND IN CSV A ===")
-    for destination in not_found:
-        print(destination)
-    print()
-else:
-    print("All CSV B link_destinations were found in CSV A.")
-    print()
+print("\n=== SUMMARY ===")
+print(f"Applied updates: {applied}")
+print(f"Skipped (existing values): {len(skipped_existing)}")
+print(f"Missing in A: {len(missing_in_a)}")
+print(f"Empty in B: {len(empty_in_b)}")
 
-print("CSV A updated successfully.")
+print(f"\nWrote: {OUT}")

@@ -2,10 +2,9 @@
 """
 Remove all hyperlinks from .docx files while preserving text and formatting.
 
-The script surgically removes <w:hyperlink> elements and promotes their
-contents into the parent element.
-
-Only XML parts that actually contain hyperlinks are modified.
+Removes:
+1) <w:hyperlink> elements
+2) Word field-based hyperlinks (HYPERLINK fields using fldChar + instrText)
 
 Usage:
     python remove_docx_hyperlinks.py [RAWS_DIR]
@@ -27,24 +26,22 @@ from xml.etree import ElementTree as ET
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
 W_HYPERLINK = f"{{{W_NS}}}hyperlink"
-
-ET.register_namespace("w", W_NS)
-
-# CONSTANTS
-
+W_R = f"{{{W_NS}}}r"
 W_FLDCHAR = f"{{{W_NS}}}fldChar"
 W_INSTRTEXT = f"{{{W_NS}}}instrText"
 FLDCHAR_TYPE = f"{{{W_NS}}}fldCharType"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+ET.register_namespace("w", W_NS)
 
-# FIELDSPACE REMOVAL
+
+# ── XML helpers ───────────────────────────────────────────────────────────────
 
 def remove_hyperlink_fields(root):
     """
-    Remove HYPERLINK field codes while preserving displayed text.
+    Remove HYPERLINK field codes while preserving display runs.
 
-    Returns number of hyperlink fields removed.
+    Handles:
+    fldChar(begin) -> instrText(HYPERLINK ...) -> fldChar(separate) -> display -> fldChar(end)
     """
     removed = 0
 
@@ -56,108 +53,93 @@ def remove_hyperlink_fields(root):
 
             child = children[i]
 
-            if (
-                child.tag == W_R
-                and len(child)
-                and child[0].tag == W_FLDCHAR
-                and child[0].get(FLDCHAR_TYPE) == "begin"
-            ):
-                start = i
+            if child.tag != W_R:
+                i += 1
+                continue
 
-                # Locate matching fldChar end
-                j = i + 1
-                found_hyperlink = False
-                end = None
+            fldchars = list(child.findall(W_FLDCHAR))
+            if not fldchars:
+                i += 1
+                continue
 
-                while j < len(children):
+            # must be field start
+            if fldchars[0].get(FLDCHAR_TYPE) != "begin":
+                i += 1
+                continue
 
-                    c = children[j]
+            # scan ahead to detect hyperlink field structure
+            j = i + 1
+            found_hyperlink = False
+            end_idx = None
+            separate_idx = None
 
-                    if c.tag == W_R:
-                        for desc in c.iter():
-                            if (
-                                desc.tag == W_INSTRTEXT
-                                and desc.text
-                                and "HYPERLINK" in desc.text.upper()
-                            ):
-                                found_hyperlink = True
+            while j < len(children):
+                r = children[j]
 
-                        for desc in c.iter():
-                            if (
-                                desc.tag == W_FLDCHAR
-                                and desc.get(FLDCHAR_TYPE) == "end"
-                            ):
-                                end = j
-                                break
+                # detect instrText
+                for it in r.findall(W_INSTRTEXT):
+                    if it.text and "HYPERLINK" in it.text.upper():
+                        found_hyperlink = True
 
-                    if end is not None:
+                # detect field boundaries
+                for fc in r.findall(W_FLDCHAR):
+                    ftype = fc.get(FLDCHAR_TYPE)
+                    if ftype == "separate":
+                        separate_idx = j
+                    elif ftype == "end":
+                        end_idx = j
                         break
 
-                    j += 1
+                if end_idx is not None:
+                    break
 
-                if found_hyperlink and end is not None:
+                j += 1
 
-                    # Remove everything except display runs
-                    to_delete = []
+            if not found_hyperlink or end_idx is None:
+                i += 1
+                continue
 
-                    inside_display = False
+            # keep only display runs between separate and end
+            display_start = (separate_idx + 1) if separate_idx is not None else (i + 1)
+            display_end = end_idx
 
-                    for k in range(start, end + 1):
+            kept = set(range(display_start, display_end))
 
-                        elem = children[k]
+            new_children = []
+            for idx, c in enumerate(children):
+                if idx < i or idx > end_idx:
+                    new_children.append(c)
+                elif idx in kept:
+                    new_children.append(c)
 
-                        keep = False
+            # rebuild parent
+            for c in children:
+                if c in parent:
+                    parent.remove(c)
 
-                        if elem.tag == W_R:
+            for c in new_children:
+                parent.append(c)
 
-                            fldchars = list(elem.iter(W_FLDCHAR))
+            removed += 1
+            children = list(parent)
+            i = 0
+            continue
 
-                            if fldchars:
-                                fld_type = fldchars[0].get(FLDCHAR_TYPE)
-
-                                if fld_type == "separate":
-                                    inside_display = True
-                                    keep = False
-
-                                elif fld_type in ("begin", "end"):
-                                    keep = False
-
-                            elif any(
-                                t.tag == W_INSTRTEXT
-                                for t in elem.iter()
-                            ):
-                                keep = False
-
-                            elif inside_display:
-                                keep = True
-
-                        if not keep:
-                            to_delete.append(elem)
-
-                    for elem in to_delete:
-                        if elem in parent:
-                            parent.remove(elem)
-
-                    removed += 1
-
-                    children = list(parent)
-                    i = 0
-                    continue
-
-            i += 1
+        # end while
 
     return removed
 
+
 def remove_hyperlinks_from_xml(xml_bytes: bytes) -> tuple[bytes, int]:
     """
-    Remove all <w:hyperlink> elements from a document part.
-
-    Returns:
-        (modified_xml_bytes, hyperlink_count_removed)
+    Remove:
+      - <w:hyperlink>
+      - field-based HYPERLINK constructs
     """
     root = ET.fromstring(xml_bytes)
     removed = 0
 
+    # 1) Remove explicit hyperlink elements
     for parent in root.iter():
         children = list(parent)
 
@@ -169,14 +151,16 @@ def remove_hyperlinks_from_xml(xml_bytes: bytes) -> tuple[bytes, int]:
 
             insertion_index = idx
 
-            # Preserve all child elements (runs, proofing marks, etc.)
             for grandchild in list(child):
                 parent.insert(insertion_index, grandchild)
                 insertion_index += 1
 
             parent.remove(child)
 
-    if not removed:
+    # 2) Remove field-based hyperlinks
+    removed += remove_hyperlink_fields(root)
+
+    if removed == 0:
         return xml_bytes, 0
 
     return (
@@ -185,12 +169,11 @@ def remove_hyperlinks_from_xml(xml_bytes: bytes) -> tuple[bytes, int]:
     )
 
 
+# ── DOCX processing ───────────────────────────────────────────────────────────
+
 def process_docx(doc_path: Path) -> int:
     """
-    Remove hyperlinks from a single DOCX.
-
-    Returns:
-        Number of hyperlinks removed.
+    Remove hyperlinks from a single DOCX file.
     """
     total_removed = 0
 
