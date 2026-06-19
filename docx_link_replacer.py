@@ -255,6 +255,9 @@ def main(raws_dir: str, mapping_csv: str, results_csv: str) -> None:
           f"{len(docx_files)} document(s).")
     print(f"Results written to {results_csv}")
 
+    print("REMEMBER you must also remove the 0-www.lexisnexis.com link in Ch 7.3, on \"(1995) 132 ALR 669\")")
+
+
 
 if __name__ == "__main__":
     raws_dir = sys.argv[1] if len(sys.argv) > 1 else "./raws"
